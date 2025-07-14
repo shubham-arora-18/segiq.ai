@@ -11,6 +11,7 @@ from starlette.applications import Starlette
 from starlette.routing import Mount
 from django.conf import settings
 
+startup_start = time.time()
 # Set Django settings module BEFORE importing chat modules
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
 from app.chat.routing import websocket_urlpatterns
@@ -19,7 +20,6 @@ from app.chat.consumers import heartbeat
 logger = structlog.get_logger(__name__)
 startup_time = Gauge('sigiq_startup_time_seconds', 'Application startup time')
 shutdown_time = Gauge('sigiq_shutdown_time_seconds', 'Application shutdown time')
-startup_start = time.time()
 
 # Create the Django ASGI application
 django_application = ProtocolTypeRouter({

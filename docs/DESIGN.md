@@ -9,9 +9,22 @@
 - Heartbeat broadcasting: `asyncio.create_task(heartbeat())` - async task
 - Connection management: Native async WebSocket operations
 
-**Thread Pool (Minimal)**: Only for potential blocking operations
-- Session persistence: Currently in-memory (no thread pool needed)
-- Future file I/O or database operations would use `sync_to_async()`
+**Thread Pool (HTTP endpoints)**: Sync views automatically wrapped with `sync_to_async()`
+- Health checks (`/healthz`, `/readyz`): Run in Django's thread pool
+- Metrics endpoint (`/metrics`): Wrapped with `sync_to_async(thread_sensitive=True)`
+- Django ASGI handler detects sync views and dispatches to threads
+
+### Why Async for WebSockets vs Sync for HTTP
+
+**WebSockets → Async** (Perfect fit):
+- **Long-lived connections**: 1000 connections = 1 event loop vs 1000 threads (8GB RAM)
+- **Real-time broadcasting**: Concurrent heartbeat + message handling
+- **High concurrency**: 5000+ connections with minimal memory overhead
+
+**HTTP Endpoints → Sync** (Acceptable overhead):
+- **Simple CRUD operations**: Single request-response cycle
+- **Low frequency**: Health checks every 30s, metrics scraping every 15s
+- **Thread pool overhead**: ~1ms penalty per request (acceptable for HTTP)
 
 ### Worker Configuration
 
@@ -30,6 +43,14 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 
 ### Concurrency Pitfalls Avoided
 
-1. **No shared state**: Each worker maintains its own `session_store`. But this can aslo be seen as a bug, if reconnection support is needed consistently. For that redis/memcache would be required as we have multiple uvicorn workers running in the background for an app's single docker container.
+1. **Shared session state**: Redis provides consistent sessions across workers
 2. **Async-only operations**: No blocking calls in async context
-3. **Graceful shutdown**: SIGTERM handling prevents connection drops
+3. **Graceful shutdown**: SIGTERM handling, allows graceful closure of active web socket connections.
+4. **Memory channel layer**: In-memory for simplicity (Redis layer available for scale)
+
+### Reconnection Support
+
+- Sessions stored in Redis with 1-hour TTL
+- Clients reconnect with `?session_id=uuid` query parameter
+- Message counters resume from last known state
+- Works across blue-green deployments

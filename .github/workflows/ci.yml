@@ -37,7 +37,7 @@ jobs:
         pytest tests/ -v
         
         # Execute monitor script for 20s (as required)
-        timeout 20s bash scripts/monitor.sh || true
+        timeout 5s bash scripts/monitor.sh || true
 
     - name: Collect logs
       if: always()

@@ -57,6 +57,24 @@
     },
     {
       "id": 4,
+      "title": "Startup Time",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "max(sigiq_startup_time_seconds)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2
+        }
+      }
+    },
+    {
+      "id": 5,
       "title": "Connections Over Time",
       "type": "timeseries",
       "targets": [
@@ -79,6 +97,24 @@
             "showPoints": "auto",
             "pointSize": 5
           }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Shutdown Time",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "max(sigiq_shutdown_time_seconds)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "decimals": 2
         }
       }
     }
