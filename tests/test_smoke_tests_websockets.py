@@ -7,7 +7,7 @@ from websockets.exceptions import ConnectionClosed
 
 
 # Get port from environment variable, default to 8000
-PORT = os.getenv('PORT', '8000')
+PORT = os.getenv('PORT', '80')
 ENV = os.getenv('TARGET_ENV', '')
 URI = f"ws://localhost:{PORT}/{ENV}/ws/chat/"
 
