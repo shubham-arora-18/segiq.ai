@@ -22,12 +22,16 @@ session_store = {}
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(args, kwargs)
+        self.message_count = None
+        self.session_id = None
+
     async def connect(self):
         # Parse query string properly
         query_string = self.scope['query_string'].decode()
         query_params = parse_qs(query_string)
         self.session_id = query_params.get('session_id', [str(uuid.uuid4())])[0]
-
         self.message_count = await self.get_message_count(self.session_id)
         connection_gauge.inc()
 
