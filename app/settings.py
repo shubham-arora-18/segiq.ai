@@ -44,7 +44,6 @@ structlog.configure(
     logger_factory=structlog.stdlib.LoggerFactory(),
 )
 
-ASGI_APPLICATION = 'app.asgi.application'
 READY = False
-DEBUG = True
 ROOT_URLCONF = 'app.chat.urls'
+SIGTERM_SIGNAL_RECEIVED = False

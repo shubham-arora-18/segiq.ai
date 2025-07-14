@@ -1,6 +1,7 @@
 import os
 import uuid
 import asyncio
+import signal
 from contextlib import asynccontextmanager
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
@@ -23,8 +24,14 @@ django_application = ProtocolTypeRouter({
 })
 
 
+def signal_sigterm_handler(signum, frame):
+    logger.info(f"Received signal {signum} (SIGTERM)", request_id=str(uuid.uuid4()))
+    settings.SIGTERM_SIGNAL_RECEIVED = True
+
+
 async def startup():
     settings.READY = True
+    signal.signal(signal.SIGTERM, signal_sigterm_handler)
     logger.info("Starting heartbeat task", request_id=str(uuid.uuid4()))
     asyncio.create_task(heartbeat())
 

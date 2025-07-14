@@ -1,0 +1,69 @@
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: segiq_nginx
+    ports:
+      - "${PORT:-80}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/templates/default.conf.template
+    environment:
+      - ACTIVE_ENV=${ACTIVE_ENV:-app_blue}
+    depends_on:
+      - app_blue
+      - app_green
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/nginx-health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    labels:
+      - "service.type=load-balancer"
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  app_blue:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: segiq_app_blue
+    environment:
+      - COLOR=blue
+      - UVICORN_WORKERS=3
+      - UVICORN_LOOP=uvloop # Options: uvloop: Ultra-fast C-based implementation (2x faster),
+                              #          asyncio: Python's default event loop, auto: Automatically choose the best available
+                              #          auto: Automatically choose the best available
+      - UVICORN_LIMIT_CONCURRENCY=7000
+    restart: unless-stopped
+    labels:
+      - "deployment.color=blue"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  app_green:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: segiq_app_green
+    environment:
+      - COLOR=green
+      - UVICORN_WORKERS=3
+      - UVICORN_LOOP=uvloop
+      - UVICORN_LIMIT_CONCURRENCY=7000
+    restart: unless-stopped
+    labels:
+      - "deployment.color=green"
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
