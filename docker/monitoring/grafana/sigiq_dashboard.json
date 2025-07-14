@@ -1,0 +1,92 @@
+{
+  "id": null,
+  "title": "SigIQ WebSocket Metrics",
+  "tags": ["sigiq"],
+  "timezone": "browser",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Active Connections",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(websocket_active_connections)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 6, "x": 0, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Total Messages",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(websocket_messages_total)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 6, "x": 6, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Error Count",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(websocket_errors_total)",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0},
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Connections Over Time",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "websocket_active_connections",
+          "refId": "A"
+        }
+      ],
+      "gridPos": {"h": 9, "w": 24, "x": 0, "y": 8},
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 5
+          }
+        }
+      }
+    }
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "refresh": "5s",
+  "schemaVersion": 37
+}

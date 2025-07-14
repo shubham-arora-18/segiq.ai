@@ -41,7 +41,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         return session_store.get(session_id, 0)
 
     async def disconnect(self, close_code):
-        connection_gauge.dec()
         await self.channel_layer.group_discard('chat', self.channel_name)
         await self.save_session()
 
@@ -50,6 +49,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         logger.info("WebSocket disconnected", session_id=self.session_id,
                     close_code=close_code, request_id=str(uuid.uuid4()))
+        connection_gauge.dec()
 
     async def receive(self, text_data):
         try:
@@ -81,12 +81,11 @@ class ChatConsumer(AsyncWebsocketConsumer):
 # Heartbeat task
 async def heartbeat():
     while getattr(settings, 'READY', False):
-        await asyncio.sleep(30)
+        await asyncio.sleep(2)
         timestamp = datetime.utcnow().isoformat()
         await channel_layer.group_send(
             'chat', {'type': 'heartbeat.message', 'message': {'ts': timestamp}}
         )
         logger.info("Heartbeat sent", timestamp=timestamp, request_id=None)
-
 
     logger.info("Heartbeat task stopped")

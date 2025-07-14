@@ -7,14 +7,14 @@ help:
 	@echo "SigIQ Django WebSocket Application"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  deploy      Deploy to next environment (blue-green)"
+	@echo "  dev-up      Deploy to next environment (blue-green)"
 	@echo "  status      Show deployment status"
 	@echo "  logs        Show application logs"
 	@echo "  load-test   Run load tests (requires Locust)"
 	@echo "  clean       Clean up containers and images"
 
 # Blue-green deployment
-deploy:
+dev-up:
 	@echo "🚀 Starting blue-green deployment..."
 	chmod +x scripts/promote.sh
 	./scripts/promote.sh deploy

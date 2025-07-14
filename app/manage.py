@@ -1,21 +1,25 @@
 import os
-import uuid
 import asyncio
 import signal
+import time
 from contextlib import asynccontextmanager
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
-
+import structlog
+from prometheus_client import Gauge
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
-from app.chat.routing import websocket_urlpatterns
-from django.conf import settings
-from app.chat.consumers import heartbeat
 from starlette.applications import Starlette
 from starlette.routing import Mount
-import structlog
+from django.conf import settings
+
+# Set Django settings module BEFORE importing chat modules
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'app.settings')
+from app.chat.routing import websocket_urlpatterns
+from app.chat.consumers import heartbeat
 
 logger = structlog.get_logger(__name__)
+startup_time = Gauge('sigiq_startup_time_seconds', 'Application startup time')
+shutdown_time = Gauge('sigiq_shutdown_time_seconds', 'Application shutdown time')
+startup_start = time.time()
 
 # Create the Django ASGI application
 django_application = ProtocolTypeRouter({
@@ -25,21 +29,24 @@ django_application = ProtocolTypeRouter({
 
 
 def signal_sigterm_handler(signum, frame):
-    logger.info(f"Received signal {signum} (SIGTERM)", request_id=str(uuid.uuid4()))
+    logger.info(f"Received signal {signum} (SIGTERM)")
     settings.SIGTERM_SIGNAL_RECEIVED = True
 
 
 async def startup():
     settings.READY = True
     signal.signal(signal.SIGTERM, signal_sigterm_handler)
-    logger.info("Starting heartbeat task", request_id=str(uuid.uuid4()))
+    logger.info("Starting heartbeat task")
     asyncio.create_task(heartbeat())
+    startup_time.set(time.time() - startup_start)
 
 
 async def shutdown():
+    shutdown_start = time.time()
     settings.READY = False
     await asyncio.sleep(1)  # Allow in-flight messages to complete
-    logger.info("Server shutdown complete", request_id=str(uuid.uuid4()))
+    logger.info("Server shutdown complete")
+    shutdown_time.set(time.time() - shutdown_start)
 
 
 @asynccontextmanager

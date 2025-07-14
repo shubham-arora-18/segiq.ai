@@ -1,10 +1,14 @@
 import structlog
 
 INSTALLED_APPS = [
-    'django.contrib.contenttypes',
     'channels',
     'app.chat',
-    'prometheus_client',
+    "django_prometheus"
+]
+
+MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 CHANNEL_LAYERS = {
@@ -17,15 +21,14 @@ LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'formatters': {
-        'json': {
-            '()': 'pythonjsonlogger.jsonlogger.JsonFormatter',
-            'format': '%(levelname)s %(message)s %(request_id)s',
+        'simple': {
+            'format': '%(message)s',
         },
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
-            'formatter': 'json',
+            'formatter': 'simple',
         },
     },
     'loggers': {
@@ -38,6 +41,15 @@ LOGGING = {
 
 structlog.configure(
     processors=[
+        structlog.stdlib.add_log_level,
+        structlog.processors.add_log_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.processors.CallsiteParameterAdder(
+            parameters=[
+                structlog.processors.CallsiteParameter.FILENAME,
+                structlog.processors.CallsiteParameter.LINENO,
+            ]
+        ),
         structlog.processors.JSONRenderer(),
     ],
     context_class=dict,
