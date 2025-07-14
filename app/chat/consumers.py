@@ -101,10 +101,6 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             logger.error("Failed to send heartbeat to client", error=str(e), session_id=self.session_id)
 
-    async def save_session(self):
-        """Async method for saving session - no thread pool overhead"""
-        session_store[self.session_id] = self.message_count
-
 
 # Heartbeat task
 async def heartbeat():
