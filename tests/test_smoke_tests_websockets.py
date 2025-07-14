@@ -3,10 +3,10 @@ import json
 import asyncio
 import websockets
 import os
+import uuid
 from websockets.exceptions import ConnectionClosed
 
-
-# Get port from environment variable, default to 8000
+# Get port from environment variable, default to 80
 PORT = os.getenv('PORT', '80')
 ENV = os.getenv('TARGET_ENV', '')
 URI = f"ws://localhost:{PORT}/{ENV}/ws/chat/"
@@ -15,7 +15,7 @@ URI = f"ws://localhost:{PORT}/{ENV}/ws/chat/"
 @pytest.mark.asyncio
 async def test_websocket_counter():
     """Test WebSocket message counting functionality"""
-    uri = f"{URI}?session_id=test-session-123"
+    uri = f"{URI}?session_id={str(uuid.uuid4())}"
 
     async with websockets.connect(uri) as ws:
         # Send a test message
@@ -49,27 +49,27 @@ async def test_websocket_counter():
             pass
 
 
-# @pytest.mark.asyncio
-# async def test_websocket_session_persistence():
-#     """Test that session data persists across connections"""
-#     session_id = "test-session-456"
-#     uri = f"{URI}?session_id={session_id}"
-#
-#     # First connection
-#     async with websockets.connect(uri) as ws1:
-#         await ws1.send("first message")
-#         response = json.loads(await ws1.recv())
-#         assert response["count"] == 1
-#
-#         await ws1.send("second message")
-#         response = json.loads(await ws1.recv())
-#         assert response["count"] == 2
-#
-#     # Second connection with same session_id should continue count
-#     async with websockets.connect(uri) as ws2:
-#         await ws2.send("third message")
-#         response = json.loads(await ws2.recv())
-#         assert response["count"] == 3  # Should continue from previous session
+# Tests redis as well
+@pytest.mark.asyncio
+async def test_websocket_session_persistence():
+    """Test that session data persists across connections"""
+    uri = f"{URI}?session_id={str(uuid.uuid4())}"
+
+    # First connection
+    async with websockets.connect(uri) as ws1:
+        await ws1.send("first message")
+        response = json.loads(await ws1.recv())
+        assert response["count"] == 1
+
+        await ws1.send("second message")
+        response = json.loads(await ws1.recv())
+        assert response["count"] == 2
+
+    # Second connection with same session_id should continue count
+    async with websockets.connect(uri) as ws2:
+        await ws2.send("third message")
+        response = json.loads(await ws2.recv())
+        assert response["count"] == 3  # Should continue from previous session
 
 
 @pytest.mark.asyncio
@@ -95,7 +95,7 @@ async def test_websocket_basic_connection():
 @pytest.mark.asyncio
 async def test_websocket_multiple_messages():
     """Test multiple messages in sequence"""
-    uri = f"{URI}?session_id=multi-test"
+    uri = f"{URI}?session_id={str(uuid.uuid4())}"
 
     async with websockets.connect(uri) as ws:
         for i in range(1, 6):  # Send 5 messages
