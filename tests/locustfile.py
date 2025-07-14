@@ -34,7 +34,7 @@ class WebSocketUser(User):
             # Create WebSocket connection with timeout
             self.ws = create_connection(
                 ws_url,
-                timeout=10,
+                timeout=20,
                 enable_multithread=True
             )
 

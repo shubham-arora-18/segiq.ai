@@ -18,6 +18,9 @@ RUN pip install -r requirements.txt
 # Copy application code
 COPY app/ ./app/
 
+# Create prometheus multiprocess directory
+RUN mkdir -p /workspace/prometheus_multiproc && chown django:django /workspace/prometheus_multiproc
+
 # Change ownership to django user
 RUN chown -R django:django /workspace
 
@@ -31,13 +34,14 @@ ENV UVICORN_HOST=0.0.0.0 \
     UVICORN_LIMIT_CONCURRENCY=5000 \
     UVICORN_LOG_LEVEL=info \
     UVICORN_ACCESS_LOG=true \
-    UVICORN_WORKERS=2
+    UVICORN_WORKERS=2 \
+    PROMETHEUS_MULTIPROC_DIR=./prometheus_multiproc
 
 # Expose port
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=3s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
 # Command using environment variables

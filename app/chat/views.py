@@ -1,5 +1,6 @@
 from django.http import HttpResponse
 from prometheus_client import generate_latest
+from prometheus_client import generate_latest, CollectorRegistry, multiprocess
 from django.conf import settings
 
 
@@ -12,4 +13,10 @@ def readyz(request):
 
 
 def metrics(request):
-    return HttpResponse(generate_latest(), content_type='text/plain')
+    # Handle multiprocess metrics aggregation
+    if hasattr(settings, 'PROMETHEUS_MULTIPROC_DIR'):
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return HttpResponse(generate_latest(registry), content_type='text/plain')
+    else:
+        return HttpResponse(generate_latest(), content_type='text/plain')

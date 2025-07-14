@@ -1,4 +1,5 @@
 import structlog
+import os
 
 INSTALLED_APPS = [
     'channels',
@@ -6,10 +7,14 @@ INSTALLED_APPS = [
     "django_prometheus"
 ]
 
+
 MIDDLEWARE = [
     'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
+
+# Enable multiprocess mode for Prometheus metrics
+PROMETHEUS_MULTIPROC_DIR = './prometheus_multiproc'
 
 CHANNEL_LAYERS = {
     'default': {
