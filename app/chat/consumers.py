@@ -85,7 +85,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 # Heartbeat task
 async def heartbeat():
     while getattr(settings, 'READY', False):
-        await asyncio.sleep(2)
+        await asyncio.sleep(30)
         timestamp = datetime.utcnow().isoformat()
         await channel_layer.group_send(
             'chat', {'type': 'heartbeat.message', 'message': {'ts': timestamp}}
