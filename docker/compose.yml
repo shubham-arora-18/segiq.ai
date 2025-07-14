@@ -74,3 +74,15 @@ services:
       - ./monitoring/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml:ro
       - ./monitoring/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/dashboard.yml:ro
       - ./monitoring/grafana/sigiq_dashboard.json:/var/lib/grafana/dashboards/sigiq_dashboard.json:ro
+
+  redis:
+    image: redis:7-alpine
+    container_name: segiq_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped

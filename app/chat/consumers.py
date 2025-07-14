@@ -2,6 +2,7 @@ import json
 import uuid
 import asyncio
 import structlog
+import redis.asyncio as redis
 from datetime import datetime
 from urllib.parse import parse_qs
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -17,8 +18,16 @@ message_counter = Counter('websocket_messages_total', 'Total messages received')
 connection_gauge = Gauge('websocket_active_connections', 'Active WebSocket connections')
 error_counter = Counter('websocket_errors_total', 'Total WebSocket errors')
 
-# In-memory session store
-session_store = {}
+# Redis connection pool
+redis_pool = None
+
+
+async def get_redis():
+    """Get Redis connection"""
+    global redis_pool
+    if redis_pool is None:
+        redis_pool = redis.ConnectionPool.from_url(settings.REDIS_URL)
+    return redis.Redis(connection_pool=redis_pool)
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -42,11 +51,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
         logger.info("WebSocket connected", session_id=self.session_id, request_id=str(uuid.uuid4()))
 
     async def get_message_count(self, session_id):
-        return session_store.get(session_id, 0)
+        """Get message count from Redis"""
+        try:
+            r = await get_redis()
+            count = await r.get(f"session:{session_id}:count")
+            return int(count) if count else 0
+        except Exception as e:
+            logger.error("Failed to get session from Redis", error=str(e), session_id=session_id)
+            return 0
+
+    async def save_message_count(self):
+        """Save message count to Redis with TTL"""
+        try:
+            r = await get_redis()
+            await r.setex(f"session:{self.session_id}:count", 3600, self.message_count)  # 1 hour TTL
+        except Exception as e:
+            logger.error("Failed to save session to Redis", error=str(e), session_id=self.session_id)
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard('chat', self.channel_name)
-        await self.save_session()
 
         if settings.SIGTERM_SIGNAL_RECEIVED:
             close_code = 1001
@@ -59,6 +82,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         try:
             self.message_count += 1
             message_counter.inc()
+            await self.save_message_count()  # Persist after each message
             await self.send(text_data=json.dumps({"count": self.message_count}))
             logger.info("Message received", session_id=self.session_id, count=self.message_count,
                         request_id=str(uuid.uuid4()))

@@ -22,6 +22,9 @@ CHANNEL_LAYERS = {
     },
 }
 
+# Redis configuration for session storage
+REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

@@ -139,7 +139,7 @@ deploy_target() {
 
     export BUILD_VERSION="${BUILD_VERSION:-$(date +%Y%m%d-%H%M%S)}"
 
-    if PORT="${PORT}" docker-compose -f "$DOCKER_DIR/compose.yml" up -d --build app_${target_env} nginx prometheus grafana; then
+    if PORT="${PORT}" docker-compose -f "$DOCKER_DIR/compose.yml" up -d --build app_${target_env} nginx prometheus grafana redis; then
         log_success "Successfully started $target_env environment"
     else
         log_error "Failed to start $target_env environment"

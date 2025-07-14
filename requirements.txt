@@ -11,3 +11,4 @@ starlette==0.47.1
 websocket-client==1.8.0
 requests==2.32.4
 django-prometheus==2.4.1
+redis==6.2.0
