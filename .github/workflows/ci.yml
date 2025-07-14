@@ -20,15 +20,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install pytest==7.4 pytest-asyncio==0.21
+        pip install -r requirements.txt
 
     - name: Build and test
       run: |
         # Build Docker images
-        docker-compose -f docker/compose.yml build
+        docker compose -f docker/compose.yml build
         
         # Start services
-        docker-compose -f docker/compose.yml up -d
+        docker compose -f docker/compose.yml up -d
         
         # Wait for services to be ready
         sleep 10
@@ -38,6 +38,11 @@ jobs:
         
         # Execute monitor script for 20s (as required)
         timeout 20s bash scripts/monitor.sh || true
+
+    - name: Collect logs
+      if: always()
+      run: |
+        docker compose -f docker/compose.yml logs > docker-logs.txt
 
     - name: Archive logs and artifacts
       if: always()
@@ -49,12 +54,7 @@ jobs:
           docker-logs.txt
         retention-days: 30
 
-    - name: Collect logs
-      if: always()
-      run: |
-        docker-compose -f docker/compose.yml logs > docker-logs.txt
-
     - name: Cleanup
       if: always()
       run: |
-        docker-compose -f docker/compose.yml down --remove-orphans
+        docker compose -f docker/compose.yml down --remove-orphans
