@@ -1,21 +1,17 @@
 services:
-  nginx:
-    image: nginx:alpine
-    container_name: segiq_nginx
+  traefik:
+    image: traefik:v3.0
+    container_name: segiq_traefik
     ports:
       - "${PORT:-80}:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/templates/default.conf.template
+      - ./traefik.yml:/etc/traefik/dynamic.yml.template:ro
+    entrypoint: ["/bin/sh", "-c", "apk add --no-cache gettext && envsubst < /etc/traefik/dynamic.yml.template > /etc/traefik/dynamic.yml && exec traefik --providers.file.filename=/etc/traefik/dynamic.yml --providers.file.watch=true --entrypoints.web.address=:80 --log.level=INFO"]
     environment:
       - ACTIVE_ENV=${ACTIVE_ENV:-app_blue}
     depends_on:
       - app_blue
       - app_green
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/nginx-health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
     restart: unless-stopped
     labels:
       - "service.type=load-balancer"
@@ -28,9 +24,7 @@ services:
     environment:
       - COLOR=blue
       - UVICORN_WORKERS=3
-      - UVICORN_LOOP=uvloop # Options: uvloop: Ultra-fast C-based implementation (2x faster),
-                              #          asyncio: Python's default event loop, auto: Automatically choose the best available
-                              #          auto: Automatically choose the best available
+      - UVICORN_LOOP=uvloop
       - UVICORN_LIMIT_CONCURRENCY=7000
     restart: unless-stopped
     labels:

@@ -1,0 +1,50 @@
+http:
+  routers:
+    app-main:
+      rule: "Host(`localhost`)"
+      service: "active-app"
+      entryPoints:
+        - "web"
+
+    app-blue-direct:
+      rule: "Host(`localhost`) && PathPrefix(`/blue`)"
+      service: "app-blue"
+      entryPoints:
+        - "web"
+      middlewares:
+        - "blue-strip"
+
+    app-green-direct:
+      rule: "Host(`localhost`) && PathPrefix(`/green`)"
+      service: "app-green"
+      entryPoints:
+        - "web"
+      middlewares:
+        - "green-strip"
+
+  services:
+    active-app:
+      loadBalancer:
+        servers:
+          - url: "http://${ACTIVE_ENV}:8000"
+
+    app-blue:
+      loadBalancer:
+        servers:
+          - url: "http://app_blue:8000"
+
+    app-green:
+      loadBalancer:
+        servers:
+          - url: "http://app_green:8000"
+
+  middlewares:
+    blue-strip:
+      stripPrefix:
+        prefixes:
+          - "/blue"
+
+    green-strip:
+      stripPrefix:
+        prefixes:
+          - "/green"

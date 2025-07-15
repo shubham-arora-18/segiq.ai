@@ -78,8 +78,8 @@ health_check() {
     log_info "Performing health check for $env environment..."
 
     for i in $(seq 1 $HEALTH_CHECK_RETRIES); do
-        if curl -f -s -H "Host: ${env}.localhost" "http://localhost:${PORT}/${env}/healthz" > /dev/null; then
-            log_success "Health check passed for $env environment via nginx"
+        if curl -f -s "http://localhost:${PORT}/${env}/healthz" > /dev/null; then
+            log_success "Health check passed for $env environment via traefik"
             return 0
         fi
 
@@ -99,7 +99,7 @@ smoke_test() {
     log_info "Running smoke tests for $target_env environment..."
 
     if ! curl -f -s "http://localhost:${PORT}/${target_env}/readyz" > /dev/null; then
-        log_error "Readiness endpoint smoke test failed via nginx."
+        log_error "Readiness endpoint smoke test failed via traefik."
         return 1
     fi
 
@@ -112,7 +112,7 @@ smoke_test() {
     return 0
 }
 
-# Update nginx configuration to switch traffic
+# Update traefik configuration to switch traffic
 switch_traffic() {
     local target_env="$1"
 
@@ -120,13 +120,13 @@ switch_traffic() {
 
     export ACTIVE_ENV="app_${target_env}"
 
-    ACTIVE_ENV="app_${target_env}" PORT="${PORT}" docker-compose -f "$DOCKER_DIR/compose.yml" up -d nginx
+    ACTIVE_ENV="app_${target_env}" PORT="${PORT}" docker-compose -f "$DOCKER_DIR/compose.yml" up -d traefik
 
     if [ $? -eq 0 ]; then
         log_success "Traffic switched to $target_env environment"
         echo "ACTIVE_ENV=app_${target_env}" > "$PROJECT_ROOT/.env"
     else
-        log_error "Failed to restart nginx with new configuration"
+        log_error "Failed to restart traefik with new configuration"
         return 1
     fi
 }
@@ -139,7 +139,7 @@ deploy_target() {
 
     export BUILD_VERSION="${BUILD_VERSION:-$(date +%Y%m%d-%H%M%S)}"
 
-    if PORT="${PORT}" docker-compose -f "$DOCKER_DIR/compose.yml" up -d --build app_${target_env} nginx prometheus grafana redis; then
+    if PORT="${PORT}" docker-compose -f "$DOCKER_DIR/compose.yml" up -d --build app_${target_env} traefik prometheus grafana redis; then
         log_success "Successfully started $target_env environment"
     else
         log_error "Failed to start $target_env environment"
@@ -259,7 +259,7 @@ Examples:
 
 Environment Variables:
     BUILD_VERSION           Version tag for the build (default: timestamp)
-    PORT                    Port for nginx (default: 80)
+    PORT                    Port for traefik (default: 80)
 
 EOF
 }

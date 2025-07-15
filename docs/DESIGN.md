@@ -17,7 +17,7 @@
 ### Why Async for WebSockets vs Sync for HTTP
 
 **WebSockets → Async** (Perfect fit):
-- **Long-lived connections**: 1000 connections = 1 event loop vs 1000 threads (8GB RAM)
+- **Long-lived connections**: 1000 connections = 1 event loop vs 1000 threads (~8MB per thread means 8GB RAM)
 - **Real-time broadcasting**: Concurrent heartbeat + message handling
 - **High concurrency**: 5000+ connections with minimal memory overhead
 

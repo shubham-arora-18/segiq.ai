@@ -38,6 +38,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         # Parse query string properly
+        request_id = str(uuid.uuid4())
         query_string = self.scope['query_string'].decode()
         query_params = parse_qs(query_string)
         self.session_id = query_params.get('session_id', [str(uuid.uuid4())])[0]
@@ -48,7 +49,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.channel_layer.group_add('chat', self.channel_name)
         await self.accept()
 
-        logger.info("WebSocket connected", session_id=self.session_id, request_id=str(uuid.uuid4()))
+        logger.info("WebSocket connected", session_id=self.session_id, request_id=request_id)
 
     async def get_message_count(self, session_id):
         """Get message count from Redis"""
@@ -69,27 +70,29 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.error("Failed to save session to Redis", error=str(e), session_id=self.session_id)
 
     async def disconnect(self, close_code):
+        request_id = str(uuid.uuid4())
         await self.channel_layer.group_discard('chat', self.channel_name)
 
         if settings.SIGTERM_SIGNAL_RECEIVED:
             close_code = 1001
 
         logger.info("WebSocket disconnected", session_id=self.session_id,
-                    close_code=close_code, request_id=str(uuid.uuid4()))
+                    close_code=close_code, request_id=request_id)
         connection_gauge.dec()
 
     async def receive(self, text_data):
+        request_id = str(uuid.uuid4())
         try:
             self.message_count += 1
             message_counter.inc()
             await self.save_message_count()  # Persist after each message
             await self.send(text_data=json.dumps({"count": self.message_count}))
             logger.info("Message received", session_id=self.session_id, count=self.message_count,
-                        request_id=str(uuid.uuid4()))
+                        request_id=request_id)
         except Exception as e:
             error_counter.inc()
             logger.error("Error processing message", error=str(e), session_id=self.session_id,
-                         request_id=str(uuid.uuid4()))
+                         request_id=request_id)
 
     async def heartbeat_message(self, event):
         """Handle heartbeat messages sent to the chat group"""
@@ -110,6 +113,6 @@ async def heartbeat():
         await channel_layer.group_send(
             'chat', {'type': 'heartbeat.message', 'message': {'ts': timestamp}}
         )
-        logger.info("Heartbeat sent", timestamp=timestamp, request_id=None)
+        logger.info("Heartbeat sent", timestamp=timestamp)
 
     logger.info("Heartbeat task stopped")

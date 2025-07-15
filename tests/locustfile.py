@@ -4,6 +4,9 @@ import time
 import random
 from locust import User, task, events
 from websocket import create_connection, WebSocketTimeoutException
+import os
+
+PORT = os.getenv('PORT', '80')
 
 
 class WebSocketUser(User):
@@ -29,7 +32,7 @@ class WebSocketUser(User):
         start_time = time.time()
         try:
             # WebSocket URL with session ID
-            ws_url = f"ws://localhost/ws/chat/?session_id={self.session_id}"
+            ws_url = f"ws://localhost:{PORT}/ws/chat/?session_id={self.session_id}"
 
             # Create WebSocket connection with timeout
             self.ws = create_connection(

@@ -1,5 +1,4 @@
 from django.http import HttpResponse
-from prometheus_client import generate_latest
 from prometheus_client import generate_latest, CollectorRegistry, multiprocess
 from django.conf import settings
 
