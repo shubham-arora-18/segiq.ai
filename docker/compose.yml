@@ -23,7 +23,7 @@ services:
     container_name: segiq_app_blue
     environment:
       - COLOR=blue
-      - UVICORN_WORKERS=3
+      - UVICORN_WORKERS=2
       - UVICORN_LOOP=uvloop
       - UVICORN_LIMIT_CONCURRENCY=7000
     restart: unless-stopped

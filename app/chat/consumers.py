@@ -70,6 +70,8 @@ class ChatConsumer(AsyncWebsocketConsumer):
             logger.error("Failed to save session to Redis", error=str(e), session_id=self.session_id)
 
     async def disconnect(self, close_code):
+        # for sigterm to reflect changes
+        await asyncio.sleep(7)
         request_id = str(uuid.uuid4())
         await self.channel_layer.group_discard('chat', self.channel_name)
 
