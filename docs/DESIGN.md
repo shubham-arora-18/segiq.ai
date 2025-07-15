@@ -1,5 +1,159 @@
 # DESIGN.md
 
+## High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                              │
+├─────────────────┬─────────────────┬─────────────────┬─────────────────────┤
+│  WebSocket      │  WebSocket      │  WebSocket      │  Load Test Client   │
+│  Client 1       │  Client 2       │  Client N       │  (Locust)          │
+└─────────────────┴─────────────────┴─────────────────┴─────────────────────┘
+                                    │
+                        WebSocket connections (5000+)
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         LOAD BALANCER LAYER                            │
+│                     Traefik v3 (:80)                                   │
+│                 Dynamic Blue-Green Routing                             │
+└─────────────────────────────────────────────────────────────────────────┘
+                                    │
+                          ┌─────────┴──────────┐
+                          ▼                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    BLUE-GREEN APPLICATION LAYER                        │
+├──────────────────────────────────┬──────────────────────────────────────┤
+│        BLUE ENVIRONMENT          │        GREEN ENVIRONMENT            │
+│     app_blue:8000                │     app_green:8000                  │
+│   Django + Channels              │   Django + Channels                 │
+│   Uvicorn Workers: 2             │   Uvicorn Workers: 3                │
+│   Concurrency: 7000              │   Concurrency: 7000                 │
+└──────────────────────────────────┴──────────────────────────────────────┘
+                                    │
+                            Session persistence
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           STORAGE LAYER                                │
+│                    Redis:6379                                          │
+│                Session Storage (TTL: 1 hour)                           │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         MONITORING STACK                               │
+├──────────────────────────────────┬──────────────────────────────────────┤
+│        Prometheus:9090           │        Grafana:3000                 │
+│    Metrics Collection            │       Dashboards                    │
+│   (15s scrape interval)          │      (5s refresh)                   │
+└──────────────────────────────────┴──────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      DEPLOYMENT & CI LAYER                             │
+├───────────────┬─────────────────┬───────────────────────────────────────┤
+│ GitHub Actions│   promote.sh    │         monitor.sh                    │
+│  CI Pipeline  │ Blue-Green      │      Ops Monitoring                   │
+│               │   Script        │                                       │
+└───────────────┴─────────────────┴───────────────────────────────────────┘
+```
+
+### System Flow:
+1. **Client connections** → Traefik load balancer
+2. **Active environment routing** → Blue OR Green (based on ACTIVE_ENV)
+3. **Session persistence** → Redis storage for reconnection support
+4. **Metrics collection** → Prometheus scrapes both environments
+5. **Deployment automation** → promote.sh handles blue-green switching
+
+## Data Flow Architecture
+
+```
+WebSocket Connection & Message Flow:
+
+Client                Traefik              App              Redis           Prometheus
+  │                     │                   │                │                  │
+  │ ws://localhost/     │                   │                │                  │
+  │ ws/chat/?session_id │                   │                │                  │
+  ├────────────────────▶│                   │                │                  │
+  │                     │ Route to active   │                │                  │
+  │                     ├──────────────────▶│                │                  │
+  │                     │                   │ GET session:   │                  │
+  │                     │                   │ uuid:count     │                  │
+  │                     │                   ├───────────────▶│                  │
+  │                     │                   │ ◀──────────────┤                  │
+  │                     │                   │ Return count   │                  │
+  │                     │                   ├────────────────┼─────────────────▶│
+  │                     │                   │                │ Increment        │
+  │                     │                   │                │ active_connections│
+  │ ◀───────────────────┼───────────────────┤                │                  │
+  │ Connection          │                   │                │                  │
+  │ established         │                   │                │                  │
+  │                     │                   │                │                  │
+  │ Text message        │                   │                │                  │
+  ├────────────────────▶│──────────────────▶│                │                  │
+  │                     │                   │ Increment      │                  │
+  │                     │                   │ counter        │                  │
+  │                     │                   ├───────────────▶│                  │
+  │                     │                   │ SETEX session  │                  │
+  │                     │                   │ TTL=3600       │                  │
+  │                     │                   ├────────────────┼─────────────────▶│
+  │                     │                   │                │ Increment        │
+  │                     │                   │                │ messages_total   │
+  │ ◀───────────────────┼───────────────────┤                │                  │
+  │ {"count": n}        │                   │                │                  │
+  │                     │                   │                │                  │
+  │ Every 30s:          │                   │                │                  │
+  │ ◀───────────────────┼───────────────────┤                │                  │
+  │ {"type":"heartbeat",│                   │ Broadcast      │                  │
+  │  "ts":"ISO"}        │                   │ task           │                  │
+  │                     │                   │                │                  │
+  │ Disconnect/SIGTERM  │                   │                │                  │
+  │ ◀───────────────────┼───────────────────┤                │                  │
+  │ Close code 1001     │                   ├────────────────┼─────────────────▶│
+  │                     │                   │                │ Decrement        │
+  │                     │                   │                │ active_connections│
+```
+
+## Blue-Green Deployment Flow
+
+```
+                    Blue-Green Deployment Process
+
+    [Start Deployment]
+            │
+            ▼
+    {Current = Blue?}
+       ┌────┴────┐
+       │ Yes     │ No
+       ▼         ▼
+  [Deploy Green] [Deploy Blue]
+       │         │
+       ▼         ▼
+  [Health Check] [Health Check]
+    Green         Blue
+       │         │
+       ▼         ▼
+  [Smoke Test]  [Smoke Test]
+    Green         Blue
+       │         │
+       ▼         ▼
+  [Switch to    [Switch to
+   Green]        Blue]
+       │         │
+       ▼         ▼
+  [Retire Blue] [Retire Green]
+       │         │
+       └────┬────┘
+            ▼
+      [Complete]
+
+    Rollback on Failure:
+    Health Check Fail ──┐
+    Smoke Test Fail ────┼──▶ [Retire Failed Env]
+    Switch Fail ────────┘         │
+                                  ▼
+                           [Rollback Complete]
+```
+
 ## ASGI Concurrency Model
 
 ### Event Loop vs Thread Pool

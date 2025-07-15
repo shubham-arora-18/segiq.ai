@@ -1,10 +1,8 @@
 import pytest
 import json
-import asyncio
 import websockets
 import os
 import uuid
-from websockets.exceptions import ConnectionClosed
 
 # Get port from environment variable, default to 80
 PORT = os.getenv('PORT', '80')
