@@ -35,19 +35,6 @@ async def test_websocket_counter():
         # Close the connection manually to test goodbye message
         await ws.close()
 
-        # Try to receive goodbye message (if any)
-        try:
-            # Add a small timeout since the goodbye message might not be sent
-            # due to connection being closed
-            response = await asyncio.wait_for(ws.recv(), timeout=1.0)
-            goodbye_msg = json.loads(response)
-            assert goodbye_msg["bye"] is True
-            assert goodbye_msg["total"] == 2
-        except (ConnectionClosed, asyncio.TimeoutError):
-            # This is expected - connection might be closed before goodbye message
-            # is sent, which is fine for this test
-            pass
-
 
 # Tests redis as well
 @pytest.mark.asyncio

@@ -39,7 +39,7 @@ make dev-up
 ## Architecture
 
 ```
-nginx (load balancer)
+traefik (load balancer)
 ├── app_blue:8000   (Django + Channels)
 ├── app_green:8000  (Django + Channels)
 ├── redis:6379      (session storage)
@@ -52,7 +52,7 @@ nginx (load balancer)
 The `promote.sh` script automatically:
 1. Builds & starts next environment
 2. Runs health checks & smoke tests  
-3. Switches nginx traffic
+3. Switches traefik traffic
 4. Retires old environment
 
 ## Monitoring

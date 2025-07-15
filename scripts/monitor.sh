@@ -9,5 +9,5 @@ docker-compose -f docker/compose.yml logs -f | grep ERROR &
 # Hit /metrics and print top-5 counters every 10s
 while true; do
     curl -s http://localhost/metrics | grep -v "^#" | sort -nr | head -5
-    sleep 3
+    sleep 10
 done

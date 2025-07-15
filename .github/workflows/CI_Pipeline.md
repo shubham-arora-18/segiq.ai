@@ -23,5 +23,3 @@ Save the GitHub Actions workflow as:
 - Test logs
 - Load test reports (if generated)
 - Docker container logs
-
-This covers the assignment requirement: *"GitHub Actions or GitLab CI pipeline that: build-&-test, run pytest, execute the monitor script for 20s, and archive logs/artifacts."*

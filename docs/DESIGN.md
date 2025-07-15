@@ -30,7 +30,7 @@
 
 ```yaml
 # docker/compose.yml
-UVICORN_WORKERS=3          # Parallely Running Uvicorn Servers
+UVICORN_WORKERS=3          # Parallel Running Uvicorn Servers
 UVICORN_LOOP=uvloop        # 2x faster than asyncio
 UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 ```
@@ -39,14 +39,25 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 - WebSocket workload is I/O-bound (waiting for client messages)
 - 3 workers handle 21,000 concurrent connections (7k each) (Ideally!)
 - uvloop provides C-based event loop performance
-- No shared mutable state between workers (in-memory sessions are worker-local)
+- No shared mutable state between workers (Redis sessions are worker-agnostic)
+
+### Key Architecture Changes
+
+**Load Balancer**: **Traefik v3** instead of nginx for better load testing.
+- Dynamic configuration via environment variables
+- Direct environment access via path prefixes
+
+**Application Server**: **Starlette + Django ASGI** hybrid
+- Starlette provides lifespan management for startup/shutdown hooks
+- Django handles HTTP endpoints and WebSocket routing
+- Uvicorn with uvloop for high-performance async I/O
 
 ### Concurrency Pitfalls Avoided
 
-1. **Shared session state**: Redis provides consistent sessions across workers
+1. **Shared session state**: Redis provides consistent sessions across workers and blue-green deployments
 2. **Async-only operations**: No blocking calls in async context
-3. **Graceful shutdown**: SIGTERM handling, allows graceful closure of active web socket connections.
-4. **Memory channel layer**: In-memory for simplicity (Redis layer available for scale)
+3. **Graceful shutdown**: SIGTERM handling with lifespan hooks, allows graceful closure of active WebSocket connections
+4. **Memory channel layer**: In-memory for simplicity (Redis layer available for scale).
 
 ### Reconnection Support
 

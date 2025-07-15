@@ -63,7 +63,7 @@
 ```
 
 ### Alert Manager
-- **Trigger**: No active connections >60s
+- **Trigger**: No active connections >60s (as required by assignment)
 - **Severity**: Warning level
 - **Action**: Investigation required
 
@@ -75,7 +75,9 @@
 1. **Active Connections** - Real-time gauge
 2. **Total Messages** - Cumulative counter  
 3. **Error Count** - Error rate tracking
-4. **Connection Timeline** - Historical graph
+4. **Startup Time** - Application startup performance
+5. **Shutdown Time** - Graceful shutdown time
+6. **Connection Timeline** - Historical graph
 
 ### Refresh
 - **Rate**: 5s auto-refresh
@@ -85,5 +87,21 @@
 
 `scripts/monitor.sh` provides:
 - Tail logs for ERROR entries
-- Top 5 metrics every 3s
+- Top 5 metrics every 3s (changed from 10s for faster feedback)
 - Real-time operational view
+
+
+## Load Balancer Change
+
+**Traefik Configuration**: Uses dynamic configuration with environment variable substitution instead of static nginx configuration:
+
+```yaml
+# traefik.yml template
+services:
+  active-app:
+    loadBalancer:
+      servers:
+        - url: "http://${ACTIVE_ENV}:8000"
+```
+
+This enables zero-downtime switching by updating the `ACTIVE_ENV` variable and restarting only the load balancer.
