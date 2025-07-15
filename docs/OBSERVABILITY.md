@@ -87,7 +87,7 @@
 
 `scripts/monitor.sh` provides:
 - Tail logs for ERROR entries
-- Top 5 metrics every 3s (changed from 10s for faster feedback)
+- Top 5 metrics every 10s
 - Real-time operational view
 
 
