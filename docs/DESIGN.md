@@ -41,11 +41,24 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 - uvloop provides C-based event loop performance
 - No shared mutable state between workers (Redis sessions are worker-agnostic)
 
-### Key Architecture Changes
+
+### Key Architecture Decisions
 
 **Load Balancer**: **Traefik v3** instead of nginx for better load testing
 - Dynamic configuration via environment variables and composer file
 - Direct environment access via path prefixes
+- Uses dynamic configuration with environment variable substitution instead of static nginx configuration:
+
+```yaml
+# traefik.yml template
+services:
+  active-app:
+    loadBalancer:
+      servers:
+        - url: "http://${ACTIVE_ENV}:8000"
+```
+
+This enables zero-downtime switching by updating the `ACTIVE_ENV` variable and restarting only the load balancer.
 
 **Application Server**: **Starlette + Django ASGI** hybrid
 - Starlette provides lifespan management for startup/shutdown hooks
@@ -66,17 +79,3 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 - Message counters resume from last known state
 - Works across blue-green deployments
 
-### Load Balancer Change
-
-**Traefik Configuration**: Uses dynamic configuration with environment variable substitution instead of static nginx configuration:
-
-```yaml
-# traefik.yml template
-services:
-  active-app:
-    loadBalancer:
-      servers:
-        - url: "http://${ACTIVE_ENV}:8000"
-```
-
-This enables zero-downtime switching by updating the `ACTIVE_ENV` variable and restarting only the load balancer.
