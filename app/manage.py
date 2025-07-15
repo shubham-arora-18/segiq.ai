@@ -44,7 +44,6 @@ async def startup():
 async def shutdown():
     shutdown_start = time.time()
     settings.READY = False
-    await asyncio.sleep(1)  # Allow in-flight messages to complete
     logger.info("Server shutdown complete")
     shutdown_time.set(time.time() - shutdown_start)
 

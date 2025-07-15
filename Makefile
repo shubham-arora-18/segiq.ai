@@ -43,7 +43,7 @@ load-test:
 	@echo "⚡ Running load tests..."
 	@if command -v locust >/dev/null 2>&1; then \
 		echo "Starting Locust load test..."; \
-		locust -f tests/locustfile.py --users=5000 --spawn-rate=100 --run-time=300s --headless --html=tests/load_test_report.html; \
+		locust -f tests/locustfile.py --users=7000 --spawn-rate=100 --run-time=300s --headless --html=tests/load_test_report.html; \
 	else \
 		echo "❌ Locust not found. Install with: pip install locust"; \
 		echo "Then run: locust -f tests/locustfile.py --host=http://localhost"; \
