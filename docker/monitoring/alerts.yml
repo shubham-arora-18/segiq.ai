@@ -1,7 +1,7 @@
 groups:
   - name: sigiq_alerts
     rules:
-      # Required by assignment: alert if active connections drop to 0 for >60s
+      # alert if active connections drop to 0 for >60s
       - alert: NoActiveWebSocketConnections
         expr: sum(websocket_active_connections) == 0
         for: 60s

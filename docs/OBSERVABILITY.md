@@ -63,7 +63,7 @@
 ```
 
 ### Alert Manager
-- **Trigger**: No active connections >60s (as required by assignment)
+- **Trigger**: No active connections >60s
 - **Severity**: Warning level
 - **Action**: Investigation required
 
@@ -89,19 +89,3 @@
 - Tail logs for ERROR entries
 - Top 5 metrics every 10s
 - Real-time operational view
-
-
-## Load Balancer Change
-
-**Traefik Configuration**: Uses dynamic configuration with environment variable substitution instead of static nginx configuration:
-
-```yaml
-# traefik.yml template
-services:
-  active-app:
-    loadBalancer:
-      servers:
-        - url: "http://${ACTIVE_ENV}:8000"
-```
-
-This enables zero-downtime switching by updating the `ACTIVE_ENV` variable and restarting only the load balancer.

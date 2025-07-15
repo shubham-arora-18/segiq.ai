@@ -43,8 +43,8 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 
 ### Key Architecture Changes
 
-**Load Balancer**: **Traefik v3** instead of nginx for better load testing.
-- Dynamic configuration via environment variables
+**Load Balancer**: **Traefik v3** instead of nginx for better load testing
+- Dynamic configuration via environment variables and composer file
 - Direct environment access via path prefixes
 
 **Application Server**: **Starlette + Django ASGI** hybrid
@@ -57,7 +57,7 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 1. **Shared session state**: Redis provides consistent sessions across workers and blue-green deployments
 2. **Async-only operations**: No blocking calls in async context
 3. **Graceful shutdown**: SIGTERM handling with lifespan hooks, allows graceful closure of active WebSocket connections
-4. **Memory channel layer**: In-memory for simplicity (Redis layer available for scale).
+4. **Memory channel layer**: In-memory for simplicity (Redis layer available for scale)
 
 ### Reconnection Support
 
@@ -65,3 +65,18 @@ UVICORN_LIMIT_CONCURRENCY=7000  # Per-worker connection limit
 - Clients reconnect with `?session_id=uuid` query parameter
 - Message counters resume from last known state
 - Works across blue-green deployments
+
+### Load Balancer Change
+
+**Traefik Configuration**: Uses dynamic configuration with environment variable substitution instead of static nginx configuration:
+
+```yaml
+# traefik.yml template
+services:
+  active-app:
+    loadBalancer:
+      servers:
+        - url: "http://${ACTIVE_ENV}:8000"
+```
+
+This enables zero-downtime switching by updating the `ACTIVE_ENV` variable and restarting only the load balancer.
