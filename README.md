@@ -9,7 +9,6 @@ Production-ready Django WebSocket service with blue-green deployment and observa
 
 - [📋 System Design & Architecture](docs/DESIGN.md)
 - [📊 Observability & Monitoring](docs/OBSERVABILITY.md)
-- 
 
 ## Quick Start
 
