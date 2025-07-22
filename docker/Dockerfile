@@ -41,7 +41,7 @@ ENV UVICORN_HOST=0.0.0.0 \
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=20s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/healthz || exit 1
 
 # Command using environment variables
@@ -51,5 +51,4 @@ CMD exec uvicorn app.manage:application \
     --workers $UVICORN_WORKERS \
     --loop $UVICORN_LOOP \
     --limit-concurrency $UVICORN_LIMIT_CONCURRENCY \
-    --log-level $UVICORN_LOG_LEVEL \
-    $([ "$UVICORN_ACCESS_LOG" = "true" ] && echo "--access-log" || echo "")
+    --log-level $UVICORN_LOG_LEVEL
