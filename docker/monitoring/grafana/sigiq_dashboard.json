@@ -95,7 +95,7 @@
             "spanNulls": false,
             "insertNulls": false,
             "showPoints": "auto",
-            "pointSize": 5
+            "pointSize": 2
           }
         }
       }
