@@ -4,7 +4,7 @@
 # 2) hits /metrics and prints the top-5 counters every 10s
 
 # Tail container logs for ERROR in background
-docker-compose -f docker/compose.yml logs -f | grep ERROR &
+docker-compose -f docker/compose.yml logs -f | grep error &
 
 # Hit /metrics and print top-5 counters every 10s
 while true; do
