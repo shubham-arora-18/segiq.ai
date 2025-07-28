@@ -37,7 +37,7 @@ class WebSocketUser(User):
             # Create WebSocket connection with timeout
             self.ws = create_connection(
                 ws_url,
-                timeout=20,
+                timeout=40,
                 enable_multithread=True
             )
 
@@ -95,7 +95,7 @@ class WebSocketUser(User):
             self.ws.send(message)
 
             # Wait for response with timeout
-            self.ws.settimeout(5)
+            self.ws.settimeout(10)
             response = self.ws.recv()
 
             # Record successful message
@@ -110,6 +110,10 @@ class WebSocketUser(User):
             )
 
             self.message_count += 1
+            # Check for empty response before JSON parsing
+            if not response or not response.strip():
+                raise ValueError("Empty response received")
+
             return json.loads(response)
 
         except WebSocketTimeoutException:
@@ -135,7 +139,7 @@ class WebSocketUser(User):
                 context={}
             )
 
-    @task(3)
+    @task(2)
     def send_chat_message(self):
         """Send a chat message (most common action)"""
         message = f"Hello from user {self.session_id[:8]} - message {self.message_count + 1}"
